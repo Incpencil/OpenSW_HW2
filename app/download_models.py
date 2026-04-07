@@ -2,6 +2,7 @@
 사전 훈련된 모델 파일을 다운로드하는 스크립트.
 - 얼굴 검출: OpenCV DNN SSD (Caffe)
 - 나이 예측: 8개 구간 분류 모델 (Caffe)
+- 성별 예측: 2개 클래스(Male/Female) 분류 모델 (Caffe)
 """
 
 import os
@@ -31,6 +32,15 @@ MODEL_URLS = {
     "age_net.caffemodel": (
         "https://github.com/GilLevi/AgeGenderDeepLearning/raw/"
         "master/models/age_net.caffemodel"
+    ),
+    # 성별 예측 모델
+    "gender_deploy.prototxt": (
+        "https://raw.githubusercontent.com/GilLevi/AgeGenderDeepLearning/"
+        "master/gender_net_definitions/deploy.prototxt"
+    ),
+    "gender_net.caffemodel": (
+        "https://github.com/GilLevi/AgeGenderDeepLearning/raw/"
+        "master/models/gender_net.caffemodel"
     ),
 }
 

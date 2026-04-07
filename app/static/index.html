@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI 기반 얼굴 나이 예측 서비스. 사진을 업로드하면 얼굴을 검출하고 나이를 예측합니다.">
+    <title>Face Age Predictor — AI 나이 예측</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- Animated background blobs -->
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+    <div class="bg-blob blob-3"></div>
+
+    <main class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🧠</span>
+                <h1>Face Age Predictor</h1>
+            </div>
+            <p class="subtitle">AI가 당신의 얼굴 나이를 예측합니다</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section" id="upload-section">
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-content" id="upload-content">
+                    <div class="upload-icon">
+                        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <h3>이미지를 드래그하거나 클릭하세요</h3>
+                    <p>JPEG, PNG, WebP, BMP 지원 · 최대 10MB</p>
+                </div>
+                <!-- Image preview (hidden initially) -->
+                <div class="preview-wrapper" id="preview-wrapper" style="display:none;">
+                    <img id="preview-image" alt="업로드된 이미지 미리보기">
+                    <button class="btn-remove" id="btn-remove" title="이미지 제거">✕</button>
+                </div>
+                <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
+            </div>
+
+            <!-- Predict button -->
+            <button class="btn-predict" id="btn-predict" disabled>
+                <span class="btn-text">나이 예측하기</span>
+                <span class="btn-loader" id="btn-loader" style="display:none;">
+                    <span class="spinner"></span>
+                    분석 중...
+                </span>
+            </button>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="results-section" style="display:none;">
+            <div class="results-header">
+                <h2>📊 분석 결과</h2>
+                <span class="results-badge" id="results-badge"></span>
+            </div>
+
+            <div class="results-grid" id="results-grid">
+                <!-- Face cards will be injected here -->
+            </div>
+
+            <!-- No face message -->
+            <div class="no-face-message" id="no-face-message" style="display:none;">
+                <span class="no-face-icon">🤷</span>
+                <p>이미지에서 얼굴을 찾지 못했습니다.</p>
+                <p class="no-face-hint">정면 얼굴이 잘 보이는 사진을 업로드해 보세요.</p>
+            </div>
+        </section>
+
+        <!-- Error Section -->
+        <div class="error-toast" id="error-toast" style="display:none;">
+            <span class="error-icon">⚠️</span>
+            <span class="error-text" id="error-text"></span>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by <strong>OpenCV DNN</strong> · Built with <strong>FastAPI</strong></p>
+        </footer>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

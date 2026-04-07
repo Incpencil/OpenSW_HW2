@@ -1,5 +1,5 @@
 """
-얼굴 검출 + 나이 예측 모델 로직.
+얼굴 검출 + 나이 예측 + 성별 예측 모델 로직.
 OpenCV DNN 모듈을 사용하여 가벼운 Caffe 모델로 추론합니다.
 """
 
@@ -18,6 +18,9 @@ AGE_BUCKETS = [
     "(25-32)", "(38-43)", "(48-53)", "(60-100)",
 ]
 
+# 성별 라벨
+GENDER_LIST = ["Male", "Female"]
+
 # 모델 전처리에 사용되는 평균값 (BGR)
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 
@@ -25,23 +28,27 @@ MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 CONFIDENCE_THRESHOLD = 0.7
 
 
-class AgePredictor:
-    """얼굴 검출 및 나이 예측 클래스."""
+class FaceAnalyzer:
+    """얼굴 검출 + 나이 예측 + 성별 예측 클래스."""
 
     def __init__(self):
         self.face_net = None
         self.age_net = None
+        self.gender_net = None
         self._loaded = False
 
     def load_models(self):
-        """Caffe 모델을 메모리에 로드합니다."""
+        """Caffe 모델(얼굴 검출, 나이, 성별)을 메모리에 로드합니다."""
         face_proto = os.path.join(MODEL_DIR, "face_deploy.prototxt")
         face_model = os.path.join(MODEL_DIR, "face_net.caffemodel")
         age_proto = os.path.join(MODEL_DIR, "age_deploy.prototxt")
         age_model = os.path.join(MODEL_DIR, "age_net.caffemodel")
+        gender_proto = os.path.join(MODEL_DIR, "gender_deploy.prototxt")
+        gender_model = os.path.join(MODEL_DIR, "gender_net.caffemodel")
 
         # 파일 존재 확인
-        for path in [face_proto, face_model, age_proto, age_model]:
+        for path in [face_proto, face_model, age_proto, age_model,
+                     gender_proto, gender_model]:
             if not os.path.exists(path):
                 raise FileNotFoundError(
                     f"모델 파일이 없습니다: {path}\n"
@@ -50,13 +57,14 @@ class AgePredictor:
 
         self.face_net = cv2.dnn.readNet(face_model, face_proto)
         self.age_net = cv2.dnn.readNet(age_model, age_proto)
+        self.gender_net = cv2.dnn.readNet(gender_model, gender_proto)
         self._loaded = True
-        print("[INFO] 모델 로드 완료")
+        print("[INFO] 모델 로드 완료 (얼굴 검출 + 나이 + 성별)")
 
     def _detect_faces(self, frame: np.ndarray) -> list:
         """
         이미지에서 얼굴 영역(bounding box)을 검출합니다.
-        Returns: list of (x1, y1, x2, y2) tuples
+        Returns: list of (x1, y1, x2, y2, confidence) tuples
         """
         h, w = frame.shape[:2]
         blob = cv2.dnn.blobFromImage(
@@ -103,9 +111,27 @@ class AgePredictor:
 
         return {"age_range": age_range, "confidence": round(confidence, 4)}
 
+    def _predict_gender(self, face_img: np.ndarray) -> dict:
+        """
+        얼굴 이미지에서 성별을 예측합니다.
+        Returns: {"gender": str, "confidence": float}
+        """
+        blob = cv2.dnn.blobFromImage(
+            face_img, 1.0, (227, 227),
+            MODEL_MEAN_VALUES, swapRB=False
+        )
+        self.gender_net.setInput(blob)
+        preds = self.gender_net.forward()
+
+        idx = preds[0].argmax()
+        gender = GENDER_LIST[idx]
+        confidence = float(preds[0][idx])
+
+        return {"gender": gender, "confidence": round(confidence, 4)}
+
     def predict(self, image_bytes: bytes) -> dict:
         """
-        이미지 바이트를 받아 얼굴 검출 + 나이 예측 결과를 반환합니다.
+        이미지 바이트를 받아 얼굴 검출 + 나이 예측 + 성별 예측 결과를 반환합니다.
 
         Returns:
             {
@@ -117,6 +143,8 @@ class AgePredictor:
                         "detection_confidence": float,
                         "age_range": str,
                         "age_confidence": float,
+                        "gender": str,
+                        "gender_confidence": float,
                     },
                     ...
                 ]
@@ -148,6 +176,7 @@ class AgePredictor:
                 continue
 
             age_result = self._predict_age(face_img)
+            gender_result = self._predict_gender(face_img)
 
             results.append({
                 "face_id": i + 1,
@@ -155,6 +184,8 @@ class AgePredictor:
                 "detection_confidence": round(det_conf, 4),
                 "age_range": age_result["age_range"],
                 "age_confidence": age_result["confidence"],
+                "gender": gender_result["gender"],
+                "gender_confidence": gender_result["confidence"],
             })
 
         return {
@@ -163,5 +194,5 @@ class AgePredictor:
         }
 
 
-# 싱글톤 인스턴스
-predictor = AgePredictor()
+# 싱글톤 인스턴스 (하위 호환성 유지)
+predictor = FaceAnalyzer()
