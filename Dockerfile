@@ -44,12 +44,10 @@ RUN groupadd --gid 1000 appuser \
 
 WORKDIR /app
 
-# OpenCV 런타임에 필요한 최소 시스템 라이브러리만 설치
+# OpenCV headless 런타임에 필요한 최소 시스템 라이브러리만 설치
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
-    libgl1-mesa-glx \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get purge -y --auto-remove
+    && rm -rf /var/lib/apt/lists/*
 
 # Stage 1에서 설치된 Python 패키지 복사
 COPY --from=builder /install /usr/local
