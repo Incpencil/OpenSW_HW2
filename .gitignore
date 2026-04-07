@@ -1,0 +1,7 @@
+# models/
+models/
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/

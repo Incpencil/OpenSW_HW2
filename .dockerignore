@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker (빌드 컨텍스트에서 제외)
+Dockerfile
+docker-compose*.yml
+
+# CI/CD
+.github/
+
+# 문서 (이미지에 불필요)
+README.md
+docs/
+
+# 로컬 모델 (Dockerfile 내에서 다운로드)
+models/
+
+# 기타
+*.md
+*.log
+.env
+.env.*
