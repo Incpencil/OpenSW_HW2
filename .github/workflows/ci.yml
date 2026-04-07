@@ -92,3 +92,56 @@ jobs:
       # 푸시 결과 요약
       - name: Image digest
         run: echo "✅ Pushed image digest - ${{ steps.meta.outputs.digest }}"
+
+  # ──────────────────────────────────────────────
+  # Job 3: Self-hosted Runner에 배포
+  # ──────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy to Local Server
+    runs-on: self-hosted
+    needs: build-and-push
+
+    steps:
+      # Docker Hub 로그인
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 기존 컨테이너 중지 및 제거
+      - name: Stop existing container
+        run: |
+          docker stop face-age-api 2>$null
+          docker rm face-age-api 2>$null
+          echo "기존 컨테이너 정리 완료"
+        continue-on-error: true
+
+      # 최신 이미지 Pull
+      - name: Pull latest image
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+      # 새 컨테이너 실행
+      - name: Run new container
+        run: |
+          docker run -d `
+            --name face-age-api `
+            --restart unless-stopped `
+            -p 8000:8000 `
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+      # 헬스체크 (서버가 완전히 뜰 때까지 대기)
+      - name: Health check
+        run: |
+          echo "서버 시작 대기 중..."
+          Start-Sleep -Seconds 15
+          try {
+            $response = Invoke-WebRequest -Uri http://localhost:8000/health -UseBasicParsing
+            echo "✅ 배포 성공! 응답: $($response.Content)"
+          } catch {
+            echo "⚠️ 헬스체크 실패, 컨테이너 로그 확인:"
+            docker logs face-age-api --tail 20
+            exit 1
+          }
+
+      # 오래된 이미지 정리
+      - name: Cleanup old images
+        run: docker image prune -f
+        continue-on-error: true
