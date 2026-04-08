@@ -1,5 +1,6 @@
 /**
- * Face Age Predictor — Frontend Logic
+ * Face Analyzer — Frontend Logic (v2.0.0)
+ * 나이 + 성별 분석 지원
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Predict Button ────────────────────────────
     btnPredict.addEventListener('click', () => {
         if (!selectedFile) return;
-        predictAge();
+        analyzeface();
     });
 
     // ── Handle File Selection ─────────────────────
@@ -109,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── API Call ───────────────────────────────────
-    async function predictAge() {
+    async function analyzeface() {
         if (!selectedFile) return;
 
         // Show loading state
@@ -135,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             renderResults(data);
         } catch (err) {
-            showError(err.message || '예측 중 오류가 발생했습니다.');
+            showError(err.message || '분석 중 오류가 발생했습니다.');
         } finally {
             // Reset button state
             btnPredict.disabled = false;
@@ -172,13 +173,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
 
+    function getGenderEmoji(gender) {
+        return gender === 'Male' ? '👨' : '👩';
+    }
+
+    function getGenderLabel(gender) {
+        return gender === 'Male' ? '남성 (Male)' : '여성 (Female)';
+    }
+
+    function getGenderColorClass(gender) {
+        return gender === 'Male' ? 'gender-male' : 'gender-female';
+    }
+
     function createFaceCard(face, index) {
         const card = document.createElement('div');
         card.className = 'face-card';
         card.style.animationDelay = `${index * 0.1}s`;
 
         const ageConfPercent = Math.round(face.age_confidence * 100);
+        const genderConfPercent = Math.round(face.gender_confidence * 100);
         const detConfPercent = Math.round(face.detection_confidence * 100);
+        const genderEmoji = getGenderEmoji(face.gender);
+        const genderLabel = getGenderLabel(face.gender);
+        const genderColorClass = getGenderColorClass(face.gender);
 
         card.innerHTML = `
             <div class="face-card-header">
@@ -188,26 +205,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <span class="face-confidence-badge">검출 ${detConfPercent}%</span>
             </div>
-            <div class="age-display">
-                <div class="age-value">${face.age_range}</div>
-                <div class="age-label">예측 나이 구간</div>
-            </div>
-            <div class="confidence-section">
-                <div class="confidence-row">
-                    <span>나이 예측 신뢰도</span>
-                    <span>${ageConfPercent}%</span>
+
+            <div class="analysis-grid">
+                <!-- Gender Result -->
+                <div class="analysis-item ${genderColorClass}">
+                    <div class="analysis-emoji">${genderEmoji}</div>
+                    <div class="analysis-value">${genderLabel}</div>
+                    <div class="analysis-label">성별 예측</div>
                 </div>
-                <div class="confidence-bar-bg">
-                    <div class="confidence-bar-fill" style="width: 0%;" data-target="${ageConfPercent}"></div>
+
+                <!-- Age Result -->
+                <div class="analysis-item age-item">
+                    <div class="analysis-emoji">🎂</div>
+                    <div class="analysis-value age-value">${face.age_range}</div>
+                    <div class="analysis-label">나이 구간</div>
+                </div>
+            </div>
+
+            <div class="confidence-section">
+                <div class="confidence-item">
+                    <div class="confidence-row">
+                        <span>성별 신뢰도</span>
+                        <span class="${genderColorClass}-text">${genderConfPercent}%</span>
+                    </div>
+                    <div class="confidence-bar-bg">
+                        <div class="confidence-bar-fill ${genderColorClass}-bar" style="width: 0%;" data-target="${genderConfPercent}"></div>
+                    </div>
+                </div>
+                <div class="confidence-item">
+                    <div class="confidence-row">
+                        <span>나이 신뢰도</span>
+                        <span>${ageConfPercent}%</span>
+                    </div>
+                    <div class="confidence-bar-bg">
+                        <div class="confidence-bar-fill" style="width: 0%;" data-target="${ageConfPercent}"></div>
+                    </div>
                 </div>
             </div>
         `;
 
-        // Animate confidence bar after card is rendered
+        // Animate confidence bars after card is rendered
         requestAnimationFrame(() => {
             setTimeout(() => {
-                const bar = card.querySelector('.confidence-bar-fill');
-                bar.style.width = bar.dataset.target + '%';
+                const bars = card.querySelectorAll('.confidence-bar-fill');
+                bars.forEach(bar => {
+                    bar.style.width = bar.dataset.target + '%';
+                });
             }, 200 + index * 100);
         });
 

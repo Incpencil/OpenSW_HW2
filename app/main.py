@@ -3,12 +3,17 @@ Face Analysis API Server
 FastAPI 기반 얼굴 나이·성별 분석 REST API
 """
 
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.model import predictor
 from app.download_models import download_models
+
+# 정적 파일 디렉토리 경로
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 
 @asynccontextmanager
@@ -30,6 +35,7 @@ async def lifespan(app: FastAPI):
 
     print("=" * 50)
     print("  API 서버 준비 완료!")
+    print("  GET  /         — 웹 UI")
     print("  POST /predict  — 이미지 업로드로 나이·성별 분석")
     print("=" * 50)
 
@@ -44,6 +50,18 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+
+# 정적 파일 마운트 (CSS, JS 등)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+# ──────────────────────────────────────────────
+# 웹 UI (루트 페이지)
+# ──────────────────────────────────────────────
+@app.get("/", include_in_schema=False)
+async def serve_ui():
+    """웹 UI를 제공합니다."""
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
 # ──────────────────────────────────────────────
